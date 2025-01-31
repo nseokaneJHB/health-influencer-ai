@@ -134,14 +134,15 @@ export const Influencer = ({ name }: { name: string }) => {
     });
 
   const activeFilters: { label: string; value: string }[] = [
-    categoryValue && { label: "Category", value: categoryValue },
-    verificationStatusValue && {
-      label: "Status",
-      value: verificationStatusValue,
-    },
-    searchValue && { label: "Search", value: searchValue },
-    sortValue && { label: "Sort", value: sortValue },
-  ].filter(Boolean);
+    categoryValue ? { label: "Category", value: categoryValue } : null,
+    verificationStatusValue
+      ? { label: "Status", value: verificationStatusValue }
+      : null,
+    searchValue ? { label: "Search", value: searchValue } : null,
+    sortValue ? { label: "Sort", value: sortValue } : null,
+  ].filter(
+    (filter): filter is { label: string; value: string } => filter !== null,
+  );
 
   return (
     <div className="flex flex-col gap-y-8">
