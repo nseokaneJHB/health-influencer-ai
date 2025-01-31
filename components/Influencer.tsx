@@ -484,7 +484,7 @@ const SelectInput = ({
           onChange={(event) => setSelectValue(event.target.value)}
           className="w-full rounded-md border border-secondary-text/50 bg-primary-background p-3"
         >
-          <option value="" selected disabled hidden>
+          <option value="" defaultValue="" disabled hidden>
             Sort By
           </option>
           {SORT_VALUES.map((value) => (

@@ -1,6 +1,5 @@
 "use server";
 
-import { toSlug } from "@/lib/utils";
 import {
   GoogleGenerativeAI,
   SchemaType,
@@ -32,118 +31,119 @@ export const generateResults = async (
   }
 };
 
-export const getStats = async () => {
-  const schema = {
-    description: "Health Influencer Summary Stats",
-    type: SchemaType.ARRAY,
-    items: {
-      type: SchemaType.OBJECT,
-      properties: {
-        value: {
-          nullable: false,
-          type: SchemaType.STRING,
-          description: "Value of the stat",
-        },
-        description: {
-          nullable: false,
-          type: SchemaType.STRING,
-          description: "Description of the stat",
-        },
-      },
-      required: ["value", "description"],
-    },
-  };
-
-  const prompt = `Get Health Influencer stats
-  * Active Influencers (Number of active influencers)
-  * Verified claims (The number of confirmation of their articles, blogs, podcast transcripts, tweets and books)
-  * Average Trust Score (The percentage of trustworthiness of their articles, blogs, podcast transcripts, tweets, and books)`;
-
-  const response = await generateResults(schema, prompt);
-
-  // const response = await axios.get("http://localhost:3000/stats.json");
-  return response.map((data: { value: string; description: string }) => {
-    return {
-      ...data,
-      id: toSlug(data.description),
-    };
-  });
-};
-
 export const getInfluencers = async () => {
   const schema = {
-    description: "List of Health Influencers",
-    type: SchemaType.ARRAY,
-    items: {
-      type: SchemaType.OBJECT,
-      properties: {
-        rank: {
-          type: SchemaType.NUMBER,
-          description: "Influencer ranking",
-          nullable: false,
-        },
-        name: {
-          type: SchemaType.STRING,
-          description: "Influencer name",
-          nullable: false,
-        },
-        image: {
-          type: SchemaType.STRING,
-          description: "Influencer image",
-          nullable: false,
-        },
-        category: {
-          type: SchemaType.STRING,
-          description: "Influencer category",
-          nullable: false,
-        },
-        trust: {
-          type: SchemaType.NUMBER,
-          description: "Influencer trust score",
-          nullable: false,
-        },
-        trend: {
-          type: SchemaType.STRING,
-          description: "Influencer trend",
-          nullable: false,
-        },
-        followers: {
-          type: SchemaType.STRING,
-          description: "Influencer followers",
-          nullable: false,
-        },
-        claims: {
-          type: SchemaType.NUMBER,
-          description: "Influencer verified claims",
-          nullable: false,
+    description: "Health Influencer Data",
+    type: SchemaType.OBJECT,
+    properties: {
+      active_influencers: {
+        type: SchemaType.STRING,
+        description: "Active Health Influencers (Number of active influencers)",
+        nullable: false,
+      },
+      overall_verified_claims: {
+        type: SchemaType.STRING,
+        description:
+          "Verified claims (The number of confirmed articles, blogs, podcast transcripts, tweets and books by Health Influencers)",
+        nullable: false,
+      },
+      overall_average_trust_score: {
+        type: SchemaType.STRING,
+        description:
+          "Average Trust Score (The percentage of trustworthiness articles, blogs, podcast transcripts, tweets, and books by Health Influencers)",
+        nullable: false,
+      },
+      influencers: {
+        type: SchemaType.ARRAY,
+        items: {
+          type: SchemaType.OBJECT,
+          properties: {
+            rank: {
+              type: SchemaType.NUMBER,
+              description: "Overall Influencer ranking (Not based on category)",
+              nullable: false,
+            },
+            name: {
+              type: SchemaType.STRING,
+              description: "Influencer name",
+              nullable: false,
+            },
+            image: {
+              type: SchemaType.STRING,
+              description: "Influencer image",
+              nullable: false,
+            },
+            category: {
+              type: SchemaType.STRING,
+              description: "Influencer category",
+              nullable: false,
+            },
+            trust: {
+              type: SchemaType.NUMBER,
+              description:
+                "Influencer trust score (The percentage of trustworthiness articles, blogs, podcast transcripts, tweets, and books by Health Influencers)",
+              nullable: false,
+            },
+            trend: {
+              type: SchemaType.STRING,
+              description: "Influencer trend",
+              nullable: false,
+            },
+            followers: {
+              type: SchemaType.STRING,
+              description: "Influencer followers",
+              nullable: false,
+            },
+            claims: {
+              type: SchemaType.NUMBER,
+              description: "Verified, Questionable or Debunked?",
+              nullable: false,
+            },
+          },
+          required: [
+            "rank",
+            "name",
+            "image",
+            "category",
+            "trust",
+            "trend",
+            "followers",
+            "claims",
+          ],
         },
       },
-      required: [
-        "rank",
-        "name",
-        "image",
-        "category",
-        "trust",
-        "trend",
-        "followers",
-        "claims",
-      ],
     },
+    required: [
+      "active_influencers",
+      "overall_verified_claims",
+      "overall_average_trust_score",
+      "influencers",
+    ],
   };
 
-  const prompt = `List at least 20 Health Influencers for these categories (Nutrition, Fitness, Medicine, Mental Health). Your response should be real data (real-time) and it should include the following:
-    * Ranking (Ranking should be overall and not per category)
-    * Name
-    * Image
-    * Category
-    * score percentage (The trustworthiness of their articles, blogs, podcast transcripts, tweets, and books)
-    * trend
-    * Number of followers
-    * Verified claims (The confirmation of their articles, blogs, podcast transcripts, tweets and books)`;
+  const prompt = `Get a list of Health Influencers for these categories (Nutrition, Fitness, Medicine, Mental Health). Your response should be real data (real-time).`;
 
   const response = await generateResults(schema, prompt);
-  // const response = await axios.get("http://localhost:3000/influencers.json");
-  return response;
+
+  const stats = [
+    {
+      id: "active-influencers",
+      value: response.active_influencers,
+      description: "Active Influencers",
+    },
+    {
+      id: "verified-claims",
+      value: response.overall_verified_claims,
+      description: "Verified Claims",
+    },
+    {
+      id: "average-trust-score",
+      value: response.overall_average_trust_score,
+      description: "Average Trust Score",
+    },
+  ];
+
+  return { influencers: response.influencers, stats };
 };
 
 export const getInfluencer = async (name: string) => {
@@ -306,7 +306,6 @@ export const getInfluencer = async (name: string) => {
   const prompt = `Get the details of the health influencer ${name}. Do not duplicate claims.`;
 
   const response = await generateResults(schema, prompt);
-  // const response = await axios.get("http://localhost:3000/influencer.json");
 
   const stats = [
     { ...response.trust, id: "trust-score", title: "Trust Score" },

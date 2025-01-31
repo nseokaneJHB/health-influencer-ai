@@ -21,7 +21,7 @@ import {
 } from "@/components/ui/table";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn, toSlug } from "@/lib/utils";
-import { getInfluencers, getStats } from "@/actions/influencer";
+import { getInfluencers } from "@/actions/influencer";
 import { useQuery } from "@tanstack/react-query";
 import { useQueryState } from "nuqs";
 
@@ -54,11 +54,6 @@ export const Influencers = () => {
     clearOnDefault: true,
   });
 
-  const statsQuery = useQuery({
-    queryKey: ["stats"],
-    queryFn: async () => await getStats(),
-  });
-
   const influencersQuery = useQuery({
     queryKey: ["influencers"],
     queryFn: async () => await getInfluencers(),
@@ -66,7 +61,9 @@ export const Influencers = () => {
 
   const filters = ["All", "Nutrition", "Fitness", "Medicine", "Mental Health"];
 
-  const influencers = ((influencersQuery.data as Influencer[]) || [])
+  const influencers = (
+    (influencersQuery?.data?.influencers as Influencer[]) || []
+  )
     .filter(
       (influencer) =>
         !categoryValue ||
@@ -90,14 +87,14 @@ export const Influencers = () => {
         </p>
       </div>
       <div className="flex items-center gap-x-6">
-        {statsQuery.isLoading || statsQuery.isPending
+        {influencersQuery.isLoading || influencersQuery.isPending
           ? Array.from({ length: 3 }).map((_, index) => (
               <Skeleton
                 key={`dashboard-stats-skeleton-${index}`}
                 className="min-h-40 w-full animate-pulse rounded-lg bg-secondary-background"
               />
             ))
-          : statsQuery.data.map((item: AnalyticsItem) => (
+          : influencersQuery?.data?.stats.map((item: AnalyticsItem) => (
               <DashboardAnalyticsItem key={item.id} item={item} />
             ))}
       </div>
@@ -163,7 +160,7 @@ export const Influencers = () => {
                 </TableCell>
               </TableRow>
             ))
-          ) : influencersQuery.data && influencersQuery.data.length > 0 ? (
+          ) : influencers && influencers.length > 0 ? (
             influencers.map(
               (
                 { rank, name, trust, trend, claims, category, followers },
@@ -235,7 +232,10 @@ const DashboardAnalyticsItem = ({ item }: { item: AnalyticsItem }) => {
     <div className="flex w-full items-center gap-x-4 rounded-lg border border-secondary-text/50 bg-secondary-background p-8">
       <div className="h-14 w-14">{icon}</div>
       <div>
-        <h2 className="text-2xl font-bold">{item.value}</h2>
+        <h2 className="text-2xl font-bold">
+          {item.value}
+          {item.id === "average-trust-score" ? "%" : ""}
+        </h2>
         <p className="text-secondary-text">{item.description}</p>
       </div>
     </div>
