@@ -1,101 +1,243 @@
-import Image from "next/image";
+"use client";
+import { useRouter } from "next/navigation";
+import {
+  Minus,
+  Users,
+  TrendingUp,
+  ArrowUpDown,
+  ChartColumn,
+  TrendingDown,
+  CircleCheckBig,
+} from "lucide-react";
+import { Button } from "@/components/ui/button";
+import {
+  Table,
+  TableRow,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableCaption,
+} from "@/components/ui/table";
+import { Skeleton } from "@/components/ui/skeleton";
+import { cn, toSlug } from "@/lib/utils";
+import { getInfluencers, getStats } from "@/actions/influencer";
+import { useQuery } from "@tanstack/react-query";
+import { useQueryState } from "nuqs";
 
-export default function Home() {
+type AnalyticsItem = {
+  id: string;
+  value: string;
+  description: string;
+};
+
+type Influencer = {
+  rank: string;
+  name: string;
+  image?: string;
+  category: string;
+  trust: number;
+  trend: string;
+  followers: string;
+  claims: string;
+};
+
+const HomePage = () => {
+  const route = useRouter();
+
+  const [categoryValue, setCategoryValue] = useQueryState("category", {
+    defaultValue: "",
+    clearOnDefault: true,
+  });
+  const [sortValue, setSortValue] = useQueryState("sort", {
+    defaultValue: "",
+    clearOnDefault: true,
+  });
+
+  const statsQuery = useQuery({
+    queryKey: ["stats"],
+    queryFn: async () => await getStats(),
+  });
+
+  const influencersQuery = useQuery({
+    queryKey: ["influencers"],
+    queryFn: async () => await getInfluencers(),
+  });
+
+  const filters = ["All", "Nutrition", "Fitness", "Medicine", "Mental Health"];
+
+  const influencers = ((influencersQuery.data as Influencer[]) || [])
+    .filter(
+      (influencer) =>
+        !categoryValue ||
+        categoryValue === "all" ||
+        toSlug(influencer.category) === categoryValue,
+    )
+    .sort((a, b) =>
+      !sortValue || sortValue === "asc"
+        ? Number(a.rank) - Number(b.rank)
+        : Number(b.rank) - Number(a.rank),
+    );
+
   return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="flex flex-col gap-8 row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="list-inside list-decimal text-sm text-center sm:text-left font-[family-name:var(--font-geist-mono)]">
-          <li className="mb-2">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] px-1 py-0.5 rounded font-semibold">
-              app/page.tsx
-            </code>
-            .
-          </li>
-          <li>Save and see your changes instantly.</li>
-        </ol>
-
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:min-w-44"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
+    <div className="flex flex-col gap-y-8">
+      <div className="flex flex-col gap-y-8">
+        <h1 className="text-6xl font-bold">Influencer Trust Leaderboard</h1>
+        <p className="text-secondary-text">
+          Real-time rankings of health influencers based on scientific accuracy,
+          credibility, and transparency. Updated daily using Al-powered
+          analysis.
+        </p>
+      </div>
+      <div className="flex items-center gap-x-6">
+        {statsQuery.isLoading || statsQuery.isPending
+          ? Array.from({ length: 3 }).map((_, index) => (
+              <Skeleton
+                key={`dashboard-stats-skeleton-${index}`}
+                className="min-h-40 w-full animate-pulse rounded-lg bg-secondary-background"
+              />
+            ))
+          : statsQuery.data.map((item: AnalyticsItem) => (
+              <DashboardAnalyticsItem key={item.id} item={item} />
+            ))}
+      </div>
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-x-4">
+          {filters.map((filter) => (
+            <Button
+              key={toSlug(filter)}
+              onClick={() => setCategoryValue(toSlug(filter))}
+              className={cn(
+                "rounded-3xl bg-secondary-background p-6 text-lg text-secondary-text-light",
+                { "first:bg-success first:text-primary-text": !categoryValue },
+                {
+                  "bg-success text-primary-text":
+                    toSlug(filter) === categoryValue,
+                },
+              )}
+            >
+              {filter}
+            </Button>
+          ))}
         </div>
-      </main>
-      <footer className="row-start-3 flex gap-6 flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
+        <Button
+          className="flex items-center rounded-lg bg-secondary-background p-6 text-secondary-text-light"
+          onClick={() =>
+            setSortValue((prev) =>
+              !prev ? "desc" : prev === "asc" ? "desc" : "asc",
+            )
+          }
         >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
+          <ArrowUpDown className="min-h-7 min-w-7" />
+          <span className="text-lg">
+            {!sortValue || sortValue === "asc" ? "Lowest" : "Highest"} First
+          </span>
+        </Button>
+      </div>
+      <Table className="rounded-lg border border-secondary-text/50 bg-secondary-background">
+        <TableCaption>
+          Top {influencers?.length || 0} list of Active Health Influencers.
+        </TableCaption>
+        <TableHeader className="">
+          <TableRow className="border-secondary-text/50">
+            <TableHead className="p-4 text-md">RANK</TableHead>
+            <TableHead className="p-4 text-md">INFLUENCER</TableHead>
+            <TableHead className="p-4 text-md">CATEGORY</TableHead>
+            <TableHead className="p-4 text-md">TRUST SCORE</TableHead>
+            <TableHead className="p-4 text-md">TREND</TableHead>
+            <TableHead className="p-4 text-md">FOLLOWERS</TableHead>
+            <TableHead className="p-4 text-md">VERIFIED CLAIMS</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {influencersQuery.isLoading || influencersQuery.isPending ? (
+            Array.from({ length: 5 }).map((_, index) => (
+              <TableRow
+                key={`dashboard-influencer-skeleton-${index}`}
+                className="animate-pulse border-secondary-text/50 bg-secondary-background"
+              >
+                <TableCell colSpan={7}>
+                  <Skeleton className="min-h-16 w-full animate-pulse bg-secondary-background" />
+                </TableCell>
+              </TableRow>
+            ))
+          ) : influencersQuery.data && influencersQuery.data.length > 0 ? (
+            influencers.map(
+              (
+                { rank, name, trust, trend, claims, category, followers },
+                index,
+              ) => (
+                <TableRow
+                  key={`dashboard-influencer-${index}`}
+                  className="cursor-pointer border-secondary-text/50 hover:bg-primary-background"
+                  onClick={() => route.push(`/${toSlug(name)}`)}
+                >
+                  <TableCell className="p-4 text-md">{rank + "#"}</TableCell>
+                  <TableCell className="flex items-center gap-4">
+                    <p className="flex h-14 w-14 items-center justify-center rounded-full bg-white text-black">
+                      {name.split(" ").map((word, index) => (
+                        <span key={`${index}-${toSlug(name)}`}>{word[0]}</span>
+                      ))}
+                    </p>
+                    <p>{name}</p>
+                  </TableCell>
+                  <TableCell className="p-4 text-md">{category}</TableCell>
+                  <TableCell
+                    className={cn(
+                      "p-4 text-md",
+                      trust >= 90
+                        ? "text-success"
+                        : trust < 80
+                          ? "text-danger"
+                          : "text-warning",
+                    )}
+                  >{`${trust}%`}</TableCell>
+                  <TableCell className="p-4 text-md">
+                    {["High", "Up"].includes(trend) ? (
+                      <TrendingUp className="text-success" />
+                    ) : ["Low", "Down"].includes(trend) ? (
+                      <TrendingDown className="text-danger" />
+                    ) : (
+                      <Minus className="text-warning" />
+                    )}
+                  </TableCell>
+                  <TableCell className="p-4 text-md">{followers}</TableCell>
+                  <TableCell className="p-4 text-md">{claims}</TableCell>
+                </TableRow>
+              ),
+            )
+          ) : (
+            <TableRow>
+              <TableCell colSpan={7} className="p-4 text-center text-xl">
+                No Influencers found.
+              </TableCell>
+            </TableRow>
+          )}
+        </TableBody>
+      </Table>
     </div>
   );
-}
+};
+
+const DashboardAnalyticsItem = ({ item }: { item: AnalyticsItem }) => {
+  const icon =
+    item.id === "active-influencers" ? (
+      <Users className="h-14 w-14 text-success" />
+    ) : item.id === "verified-claims" ? (
+      <CircleCheckBig className="h-14 w-14 text-success" />
+    ) : (
+      <ChartColumn className="h-14 w-14 text-success" />
+    );
+
+  return (
+    <div className="flex w-full items-center gap-x-4 rounded-lg border border-secondary-text/50 bg-secondary-background p-8">
+      <div className="h-14 w-14">{icon}</div>
+      <div>
+        <h2 className="text-2xl font-bold">{item.value}</h2>
+        <p className="text-secondary-text">{item.description}</p>
+      </div>
+    </div>
+  );
+};
+
+export default HomePage;
